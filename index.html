@@ -28,74 +28,42 @@
         
         recognition.lang = 'ja-JP';
         recognition.interimResults = true;
-        recognition.continuous = false; // iOS対策で連続認識はOFF
+        recognition.continuous = false;
 
-        let isRecognizing = false; // 現在録音中かどうかのフラグ
+        let isRecognizing = false;
 
         micBtn.addEventListener('click', () => {
             if (isRecognizing) {
-                // 録音中なら止める
                 recognition.stop();
             } else {
-                // 停止中なら開始する
-                try {
-                    recognition.start();
-                } catch(e) {
-                    resultDiv.innerText = "起動エラー: " + e.message;
-                }
+                recognition.start();
+                resultDiv.innerText = "マイク起動中...喋り始めてください";
             }
         });
 
-        // 録音が開始されたとき
-        recognition.onstart = () => {
-            isRecognizing = true;
-            micBtn.innerText = "マイクをOFF";
-            micBtn.className = "btn stop"; // 赤色系のクラス
-            resultDiv.innerText = "録音中...話してください";
-        };
-
-        // 録音が停止したとき
-        recognition.onend = () => {
-            isRecognizing = false;
-            micBtn.innerText = "マイクをON";
-            micBtn.className = "btn start"; // 緑色系のクラス
-            resultDiv.innerText = "停止しました";
+        // 【追加】音が検知された瞬間に反応する
+        recognition.onsoundstart = () => {
+            resultDiv.innerText = "音を検知しました！変換中...";
         };
 
         recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = '';
+            let transcript = event.results[0][0].transcript;
+            resultDiv.innerText = "認識中: " + transcript;
             
-            // 途中経過と確定した結果を分ける
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            
-            // 途中経過があればそれを表示し、なければ最終結果を表示
-            resultDiv.innerText = "認識中: " + (interimTranscript || finalTranscript);
-            
-            // 確定した場合の送信処理
-            if (finalTranscript !== '') {
-                resultDiv.innerText = "送信中: " + finalTranscript;
-                fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
+            if (event.results[0].isFinal) {
+                fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
                     .then(res => res.text())
-                    .then(data => {
-                        resultDiv.innerText = "結果: " + data;
-                    })
-                    .catch(err => {
-                        resultDiv.innerText = "通信エラー: " + err;
-                    });
+                    .then(data => resultDiv.innerText = "Geminiの回答: " + data);
             }
         };
 
         recognition.onerror = (event) => {
-            isRecognizing = false;
             resultDiv.innerText = "エラー: " + event.error;
+            isRecognizing = false;
         };
+
+        recognition.onstart = () => { isRecognizing = true; };
+        recognition.onend = () => { isRecognizing = false; };
     </script>
 </body>
 </html>
