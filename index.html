@@ -30,20 +30,32 @@
         recognition.interimResults = true;
         recognition.continuous = false;
 
+        // ボタンの切り替え状態を管理
         let isRecognizing = false;
 
         micBtn.addEventListener('click', () => {
             if (isRecognizing) {
+                // 停止処理
                 recognition.stop();
             } else {
+                // 開始処理
                 recognition.start();
-                resultDiv.innerText = "マイク起動中...喋り始めてください";
             }
         });
 
-        // 【追加】音が検知された瞬間に反応する
-        recognition.onsoundstart = () => {
-            resultDiv.innerText = "音を検知しました！変換中...";
+        // 「開始」された瞬間にボタンの見た目を更新
+        recognition.onstart = () => {
+            isRecognizing = true;
+            micBtn.innerText = "マイクをOFF";
+            micBtn.className = "btn stop"; // ここで赤色系のCSSスタイル（stop）を適用
+        };
+
+        // 「終了」した瞬間にボタンの見た目を更新
+        recognition.onend = () => {
+            isRecognizing = false;
+            micBtn.innerText = "マイクをON";
+            micBtn.className = "btn start"; // ここで緑色系のCSSスタイル（start）を適用
+            resultDiv.innerText = "停止しました";
         };
 
         recognition.onresult = (event) => {
@@ -51,19 +63,21 @@
             resultDiv.innerText = "認識中: " + transcript;
             
             if (event.results[0].isFinal) {
+                resultDiv.innerText = "送信中...";
                 fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
                     .then(res => res.text())
-                    .then(data => resultDiv.innerText = "Geminiの回答: " + data);
+                    .then(data => resultDiv.innerText = "Geminiの回答: " + data)
+                    .catch(err => resultDiv.innerText = "通信エラー: " + err);
             }
         };
 
         recognition.onerror = (event) => {
             resultDiv.innerText = "エラー: " + event.error;
             isRecognizing = false;
+            // エラー時もボタンを戻す
+            micBtn.innerText = "マイクをON";
+            micBtn.className = "btn start";
         };
-
-        recognition.onstart = () => { isRecognizing = true; };
-        recognition.onend = () => { isRecognizing = false; };
     </script>
 </body>
 </html>
