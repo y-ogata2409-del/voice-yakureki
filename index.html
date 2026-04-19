@@ -85,7 +85,7 @@
             }
         });
 
-        // 2. 解析ボタン (手動で送信)
+        // 2. 解析ボタンの修正部分
         analyzeBtn.addEventListener('click', () => {
             if (transcriptBuffer === "") {
                 alert("記録がありません");
@@ -96,6 +96,9 @@
                 .then(res => res.text())
                 .then(data => {
                     resultDiv.innerHTML = "<strong>薬歴案:</strong><br>" + data.replace(/\n/g, '<br>');
+                    
+                    // ★ここに追加：解析成功後にバッファをクリアする
+                    transcriptBuffer = ""; 
                 })
                 .catch(err => resultDiv.innerText = "通信エラー: " + err);
         });
