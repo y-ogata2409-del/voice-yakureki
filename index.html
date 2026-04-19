@@ -28,23 +28,44 @@
         
         recognition.lang = 'ja-JP';
         recognition.interimResults = true;
-        recognition.continuous = false;
+        recognition.continuous = false; // iOS対策で連続認識はOFF
+
+        let isRecognizing = false; // 現在録音中かどうかのフラグ
 
         micBtn.addEventListener('click', () => {
-            try {
-                recognition.start();
-                resultDiv.innerText = "起動しました。話してください...";
-            } catch(e) {
-                resultDiv.innerText = "起動エラー: " + e.message;
+            if (isRecognizing) {
+                // 録音中なら止める
+                recognition.stop();
+            } else {
+                // 停止中なら開始する
+                try {
+                    recognition.start();
+                } catch(e) {
+                    resultDiv.innerText = "起動エラー: " + e.message;
+                }
             }
         });
 
-        // 認識中のイベントをすべて画面に表示して動きを可視化
+        // 録音が開始されたとき
+        recognition.onstart = () => {
+            isRecognizing = true;
+            micBtn.innerText = "マイクをOFF";
+            micBtn.className = "btn stop"; // 赤色系のクラス
+            resultDiv.innerText = "録音中...話してください";
+        };
+
+        // 録音が停止したとき
+        recognition.onend = () => {
+            isRecognizing = false;
+            micBtn.innerText = "マイクをON";
+            micBtn.className = "btn start"; // 緑色系のクラス
+            resultDiv.innerText = "停止しました";
+        };
+
         recognition.onresult = (event) => {
             let transcript = event.results[0][0].transcript;
             resultDiv.innerText = "認識中: " + transcript;
             
-            // 確定したら送信
             if (event.results[0].isFinal) {
                 resultDiv.innerText = "送信中...";
                 fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
@@ -55,11 +76,8 @@
         };
 
         recognition.onerror = (event) => {
+            isRecognizing = false;
             resultDiv.innerText = "エラー: " + event.error;
-        };
-
-        recognition.onend = () => {
-            console.log("認識終了");
         };
     </script>
 </body>
