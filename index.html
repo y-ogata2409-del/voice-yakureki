@@ -65,13 +65,22 @@
 
         recognition.onresult = (event) => {
             let finalTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                finalTranscript += event.results[i][0].transcript;
-            }
-            resultDiv.innerText = "認識中: " + finalTranscript;
+            let interimTranscript = ''; // 途中経過用
 
-            if (event.results[event.results.length - 1].isFinal) {
-                resultDiv.innerText = "送信中...";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            // 途中経過を優先的に表示する
+            resultDiv.innerText = "認識中: " + (interimTranscript || finalTranscript);
+
+            // 確定した場合の処理
+            if (finalTranscript !== '') {
+                resultDiv.innerText = "送信中: " + finalTranscript;
                 fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
                     .then(res => res.text())
                     .then(data => {
