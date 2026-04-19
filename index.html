@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPhone音声認識アプリ</title>
+    <title>iPhone音声解析アプリ</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; }
         #result { margin: 20px; padding: 15px; border: 1px solid #ccc; min-height: 50px; }
@@ -21,14 +21,13 @@
     <script>
         const micBtn = document.getElementById('micBtn');
         const resultDiv = document.getElementById('result');
-        
-        // GASのウェブアプリURL（doGetのURL）をここに貼り付けてください
-        const GAS_URL = "https://script.google.com/a/macros/gesetmedical.jp/s/AKfycbzuxfmwuMfTaI2GIf8tCfKBm-PgHqHyFn6g97Vs-h7QmFchUrBT-nw8lgIN-QlNNOBK/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzuxfmwuMfTaI2GIf8tCfKBm-PgHqHyFn6g97Vs-h7QmFchUrBT-nw8lgIN-QlNNOBK/exec";
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.lang = 'ja-JP';
-        recognition.interimResults = false;
+        recognition.interimResults = true; // 途中経過も表示
+        recognition.continuous = true;     // 連続認識
 
         let isRecognizing = false;
 
@@ -44,6 +43,7 @@
             isRecognizing = true;
             micBtn.innerText = "マイクをOFF";
             micBtn.className = "btn stop";
+            resultDiv.innerText = "録音中...何か話してください";
         };
 
         recognition.onend = () => {
@@ -53,18 +53,31 @@
         };
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            resultDiv.innerText = "解析中...";
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+            
+            // 認識中のテキストを表示
+            resultDiv.innerText = "認識中: " + finalTranscript;
 
-            // GASへ送信
-            fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
-                .then(res => res.text())
-                .then(data => {
-                    resultDiv.innerText = "Geminiの回答: " + data;
-                })
-                .catch(err => {
-                    resultDiv.innerText = "エラー: " + err;
-                });
+            // 確定した結果が送られてきたらGASへ送信
+            if (event.results[event.results.length - 1].isFinal) {
+                resultDiv.innerText = "Geminiに送信中...";
+                fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
+                    .then(res => res.text())
+                    .then(data => {
+                        resultDiv.innerText = "Geminiの回答: " + data;
+                    })
+                    .catch(err => {
+                        resultDiv.innerText = "通信エラー: " + err;
+                    });
+            }
+        };
+
+        recognition.onerror = (event) => {
+            resultDiv.innerText = "エラー発生: " + event.error;
+            isRecognizing = false;
         };
     </script>
 </body>
