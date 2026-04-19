@@ -1,7 +1,60 @@
-<h1>音声解析アプリ</h1>
-    <button id="micBtn" class="btn start">マイクをON</button>
-    <button id="analyzeBtn" class="btn" style="background:#2196F3; color:white;">解析する</button>
-    <button id="resetBtn" class="btn" style="background:#607d8b; color:white;">リセット</button>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>薬歴作成AI</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 15px; 
+            margin: 0; 
+            background-color: #f4f4f9;
+        }
+        h1 { font-size: 1.5rem; text-align: center; }
+        
+        /* ボタンエリアを横並び/縦並びで調整 */
+        .controls { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        .btn { 
+            padding: 18px; 
+            font-size: 1rem; 
+            border-radius: 12px; 
+            border: none; 
+            color: white; 
+            font-weight: bold;
+        }
+        #micBtn { grid-column: span 2; } /* マイクは全幅 */
+        
+        #result { 
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            min-height: 200px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .start { background: #2e7d32; }
+        .stop { background: #c62828; }
+        .analyze { background: #1565c0; }
+        .reset { background: #546e7a; }
+    </style>
+</head>
+<body>
+
+    <h1>薬歴作成ツール</h1>
+    
+    <div class="controls">
+        <button id="micBtn" class="btn start">マイクをON</button>
+        <button id="analyzeBtn" class="btn analyze">解析する</button>
+        <button id="resetBtn" class="btn reset">リセット</button>
+    </div>
     
     <div id="result">ここに結果が表示されます</div>
 
