@@ -1,27 +1,16 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPhone音声解析アプリ</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
-        #result { margin: 20px; padding: 15px; border: 1px solid #ccc; min-height: 50px; }
-        .btn { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 30px; border: none; }
-        .start { background: #4CAF50; color: white; }
-        .stop { background: #f44336; color: white; }
-    </style>
-</head>
-<body>
-
-    <h1>音声解析アプリ</h1>
+<h1>音声解析アプリ</h1>
     <button id="micBtn" class="btn start">マイクをON</button>
+    <button id="analyzeBtn" class="btn" style="background:#2196F3; color:white;">解析する</button>
+    <button id="resetBtn" class="btn" style="background:#607d8b; color:white;">リセット</button>
+    
     <div id="result">ここに結果が表示されます</div>
 
     <script>
         const micBtn = document.getElementById('micBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const resultDiv = document.getElementById('result');
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbycK0mKAeYIbckOhiV8iIT1ERiXS4wnb6XYO-ILfBBqvIBHQekduXgGILCESusxkSWO/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbycK0mKAeYIbckOhiV8iIT1ERiXS4wnb6XYO-ILfBBqvIBHQekduXgGILCESusxkSWO/exechttps://script.google.com/macros/s/AKfycbycK0mKAeYIbckOhiV8iIT1ERiXS4wnb6XYO-ILfBBqvIBHQekduXgGILCESusxkSWO/exec";
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -30,43 +19,55 @@
         recognition.interimResults = true;
         recognition.continuous = false;
 
-        // ボタンの切り替え状態を管理
         let isRecognizing = false;
+        let transcriptBuffer = ""; 
 
+        // 1. マイクON/OFF
         micBtn.addEventListener('click', () => {
             if (isRecognizing) {
-                // 停止処理
                 recognition.stop();
             } else {
-                // 開始処理
                 recognition.start();
             }
         });
 
-        // 「開始」された瞬間にボタンの見た目を更新
+        // 2. 解析ボタン (手動で送信)
+        analyzeBtn.addEventListener('click', () => {
+            if (transcriptBuffer === "") {
+                alert("記録がありません");
+                return;
+            }
+            resultDiv.innerText = "解析中...";
+            fetch(GAS_URL + "?text=" + encodeURIComponent(transcriptBuffer))
+                .then(res => res.text())
+                .then(data => {
+                    resultDiv.innerHTML = "<strong>薬歴案:</strong><br>" + data.replace(/\n/g, '<br>');
+                })
+                .catch(err => resultDiv.innerText = "通信エラー: " + err);
+        });
+
+        // 3. リセットボタン
+        resetBtn.addEventListener('click', () => {
+            if(confirm("記録を消去しますか？")) {
+                transcriptBuffer = "";
+                resultDiv.innerText = "記録をリセットしました";
+            }
+        });
+
         recognition.onstart = () => {
             isRecognizing = true;
             micBtn.innerText = "マイクをOFF";
-            micBtn.className = "btn stop"; // ここで赤色系のCSSスタイル（stop）を適用
+            micBtn.className = "btn stop";
         };
-        
-        // 録音が終了したとき
+
         recognition.onend = () => {
-            // もし「録音中フラグ」が立っているなら、即座に再起動する
             if (isRecognizing) {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    // すでに開始している場合などのエラーを握りつぶす
-                }
+                try { recognition.start(); } catch(e) {}
             } else {
-                // ユーザーが停止した場合は、ボタンを戻す
                 micBtn.innerText = "マイクをON";
                 micBtn.className = "btn start";
-                resultDiv.innerText = "停止しました";
             }
         };
-        let transcriptBuffer = ""; // これまで認識した内容を溜めておく変数
 
         recognition.onresult = (event) => {
             let interimTranscript = "";
@@ -77,28 +78,6 @@
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
-            
             resultDiv.innerText = "認識中: " + transcriptBuffer + interimTranscript;
-            
-            if (event.results[event.results.length - 1].isFinal) {
-                resultDiv.innerText = "送信中...";
-                fetch(GAS_URL + "?text=" + encodeURIComponent(transcriptBuffer))
-                    .then(res => res.text())
-                    .then(data => {
-                        resultDiv.innerText = "サーバーからの返信: " + data;
-                    })
-                    .catch(err => {
-                        resultDiv.innerText = "通信エラー: " + err;
-                    });
-            }
-        };
-
-        recognition.onerror = (event) => {
-            resultDiv.innerText = "エラー: " + event.error;
-            isRecognizing = false;
-            micBtn.innerText = "マイクをON";
-            micBtn.className = "btn start";
         };
     </script>
-</body>
-</html>
