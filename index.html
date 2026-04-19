@@ -78,6 +78,7 @@
         // 1. マイクON/OFF
         micBtn.addEventListener('click', () => {
             if (isRecognizing) {
+                isRecognizing = false; // ★ここを追加！これで「止める意思」が伝わる
                 recognition.stop();
             } else {
                 recognition.start();
