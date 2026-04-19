@@ -83,15 +83,15 @@
             
             if (event.results[0].isFinal) {
                 resultDiv.innerText = "送信中...";
-                fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
-                    .then(res => res.text())
-                    .then(data => {
-                        // 改行コード(\n)をHTMLの改行タグ(<br>)に変換して表示
-                        resultDiv.innerHTML = "<strong>薬歴案:</strong><br>" + data.replace(/\n/g, '<br>');
-                    })
-                    .catch(err => resultDiv.innerText = "通信エラー: " + err);
-            }
-        };
+                fetch(GAS_URL + "?text=" + encodeURIComponent(transcriptBuffer))
+    .then(res => res.text())
+    .then(data => {
+        // サーバー（GAS）から返ってきた文字を画面に表示
+        resultDiv.innerText = "サーバーからの返信: " + data;
+    })
+    .catch(err => {
+        resultDiv.innerText = "通信エラー: " + err;
+    });
 
         recognition.onerror = (event) => {
             resultDiv.innerText = "エラー: " + event.error;
