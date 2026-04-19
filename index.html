@@ -85,7 +85,10 @@
                 resultDiv.innerText = "送信中...";
                 fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
                     .then(res => res.text())
-                    .then(data => resultDiv.innerText = "Geminiの回答: " + data)
+                    .then(data => {
+                        // 改行コード(\n)をHTMLの改行タグ(<br>)に変換して表示
+                        resultDiv.innerHTML = "<strong>薬歴案:</strong><br>" + data.replace(/\n/g, '<br>');
+                    })
                     .catch(err => resultDiv.innerText = "通信エラー: " + err);
             }
         };
