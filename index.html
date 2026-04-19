@@ -78,25 +78,24 @@
                 }
             }
             
-            // これまで蓄積した内容 + 現在変換中の内容を表示
             resultDiv.innerText = "認識中: " + transcriptBuffer + interimTranscript;
             
-            if (event.results[0].isFinal) {
+            if (event.results[event.results.length - 1].isFinal) {
                 resultDiv.innerText = "送信中...";
                 fetch(GAS_URL + "?text=" + encodeURIComponent(transcriptBuffer))
-    .then(res => res.text())
-    .then(data => {
-        // サーバー（GAS）から返ってきた文字を画面に表示
-        resultDiv.innerText = "サーバーからの返信: " + data;
-    })
-    .catch(err => {
-        resultDiv.innerText = "通信エラー: " + err;
-    });
+                    .then(res => res.text())
+                    .then(data => {
+                        resultDiv.innerText = "サーバーからの返信: " + data;
+                    })
+                    .catch(err => {
+                        resultDiv.innerText = "通信エラー: " + err;
+                    });
+            }
+        };
 
         recognition.onerror = (event) => {
             resultDiv.innerText = "エラー: " + event.error;
             isRecognizing = false;
-            // エラー時もボタンを戻す
             micBtn.innerText = "マイクをON";
             micBtn.className = "btn start";
         };
