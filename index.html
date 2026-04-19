@@ -21,41 +21,45 @@
     <script>
         const micBtn = document.getElementById('micBtn');
         const resultDiv = document.getElementById('result');
-        const GAS_URL = "あなたのGASのデプロイURLをここに貼り付け";
+        const GAS_URL = "あなたのGASのデプロイURL";
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         
         recognition.lang = 'ja-JP';
         recognition.interimResults = true;
-        // iOS対策：continuousをfalseにして、こまめに再起動する方式にします
-        recognition.continuous = false; 
+        recognition.continuous = false; // iOS対策
 
-        let isRecognizing = false;
+        let isRequestedON = false; // 「ユーザーがONを望んでいるか」を管理するフラグ
 
         micBtn.addEventListener('click', () => {
-            if (isRecognizing) {
-                recognition.stop();
+            if (isRequestedON) {
+                // 停止処理
+                isRequestedON = false; // フラグを下ろす
+                recognition.stop();    // 止める
             } else {
+                // 開始処理
+                isRequestedON = true;  // フラグを立てる
                 recognition.start();
             }
         });
 
         recognition.onstart = () => {
-            isRecognizing = true;
             micBtn.innerText = "マイクをOFF";
             micBtn.className = "btn stop";
             resultDiv.innerText = "録音中...喋ってください";
         };
 
-        // 終了したとき、もし意図せず終わっていたら再起動する
+        // 終了したとき
         recognition.onend = () => {
-            if (isRecognizing) {
-                // まだONの状態なら再起動（iOSの停止対策）
+            if (isRequestedON) {
+                // ユーザーがまだONを望んでいるなら再起動
                 try { recognition.start(); } catch(e) {}
             } else {
+                // ユーザーが停止を望んだ場合
                 micBtn.innerText = "マイクをON";
                 micBtn.className = "btn start";
+                resultDiv.innerText = "停止しました";
             }
         };
 
@@ -66,24 +70,16 @@
             }
             resultDiv.innerText = "認識中: " + finalTranscript;
 
-            // 確定したときにGASへ送信
             if (event.results[event.results.length - 1].isFinal) {
-                resultDiv.innerText = "送信中: " + finalTranscript;
+                resultDiv.innerText = "送信中...";
                 fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
                     .then(res => res.text())
                     .then(data => {
                         resultDiv.innerText = "結果: " + data;
                     })
                     .catch(err => {
-                        resultDiv.innerText = "エラー: " + err;
+                        resultDiv.innerText = "通信エラー";
                     });
-            }
-        };
-
-        recognition.onerror = (event) => {
-            // aborted は無視して再起動を試みる
-            if (event.error !== 'aborted') {
-                resultDiv.innerText = "エラー発生: " + event.error;
             }
         };
     </script>
