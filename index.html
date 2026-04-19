@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone音声認識アプリ</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        #result { margin: 20px; padding: 15px; border: 1px solid #ccc; min-height: 50px; }
+        .btn { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 30px; border: none; }
+        .start { background: #4CAF50; color: white; }
+        .stop { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>音声解析アプリ</h1>
+    <button id="micBtn" class="btn start">マイクをON</button>
+    <div id="result">ここに結果が表示されます</div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const resultDiv = document.getElementById('result');
+        
+        // GASのウェブアプリURL（doGetのURL）をここに貼り付けてください
+        const GAS_URL = "https://script.google.com/a/macros/gesetmedical.jp/s/AKfycbzuxfmwuMfTaI2GIf8tCfKBm-PgHqHyFn6g97Vs-h7QmFchUrBT-nw8lgIN-QlNNOBK/exec";
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ja-JP';
+        recognition.interimResults = false;
+
+        let isRecognizing = false;
+
+        micBtn.addEventListener('click', () => {
+            if (isRecognizing) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+        recognition.onstart = () => {
+            isRecognizing = true;
+            micBtn.innerText = "マイクをOFF";
+            micBtn.className = "btn stop";
+        };
+
+        recognition.onend = () => {
+            isRecognizing = false;
+            micBtn.innerText = "マイクをON";
+            micBtn.className = "btn start";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            resultDiv.innerText = "解析中...";
+
+            // GASへ送信
+            fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
+                .then(res => res.text())
+                .then(data => {
+                    resultDiv.innerText = "Geminiの回答: " + data;
+                })
+                .catch(err => {
+                    resultDiv.innerText = "エラー: " + err;
+                });
+        };
+    </script>
+</body>
+</html>
