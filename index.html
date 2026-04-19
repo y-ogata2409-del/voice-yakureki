@@ -28,68 +28,38 @@
         
         recognition.lang = 'ja-JP';
         recognition.interimResults = true;
-        recognition.continuous = false; // iOS対策
-
-        let isRequestedON = false; // 「ユーザーがONを望んでいるか」を管理するフラグ
+        recognition.continuous = false;
 
         micBtn.addEventListener('click', () => {
-            if (isRequestedON) {
-                // 停止処理
-                isRequestedON = false; // フラグを下ろす
-                recognition.stop();    // 止める
-            } else {
-                // 開始処理
-                isRequestedON = true;  // フラグを立てる
+            try {
                 recognition.start();
+                resultDiv.innerText = "起動しました。話してください...";
+            } catch(e) {
+                resultDiv.innerText = "起動エラー: " + e.message;
             }
         });
 
-        recognition.onstart = () => {
-            micBtn.innerText = "マイクをOFF";
-            micBtn.className = "btn stop";
-            resultDiv.innerText = "録音中...喋ってください";
-        };
-
-        // 終了したとき
-        recognition.onend = () => {
-            if (isRequestedON) {
-                // ユーザーがまだONを望んでいるなら再起動
-                try { recognition.start(); } catch(e) {}
-            } else {
-                // ユーザーが停止を望んだ場合
-                micBtn.innerText = "マイクをON";
-                micBtn.className = "btn start";
-                resultDiv.innerText = "停止しました";
-            }
-        };
-
+        // 認識中のイベントをすべて画面に表示して動きを可視化
         recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = ''; // 途中経過用
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
+            let transcript = event.results[0][0].transcript;
+            resultDiv.innerText = "認識中: " + transcript;
             
-            // 途中経過を優先的に表示する
-            resultDiv.innerText = "認識中: " + (interimTranscript || finalTranscript);
-
-            // 確定した場合の処理
-            if (finalTranscript !== '') {
-                resultDiv.innerText = "送信中: " + finalTranscript;
-                fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
+            // 確定したら送信
+            if (event.results[0].isFinal) {
+                resultDiv.innerText = "送信中...";
+                fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
                     .then(res => res.text())
-                    .then(data => {
-                        resultDiv.innerText = "結果: " + data;
-                    })
-                    .catch(err => {
-                        resultDiv.innerText = "通信エラー";
-                    });
+                    .then(data => resultDiv.innerText = "結果: " + data)
+                    .catch(err => resultDiv.innerText = "通信エラー: " + err);
             }
+        };
+
+        recognition.onerror = (event) => {
+            resultDiv.innerText = "エラー: " + event.error;
+        };
+
+        recognition.onend = () => {
+            console.log("認識終了");
         };
     </script>
 </body>
