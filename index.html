@@ -63,15 +63,32 @@
         };
 
         recognition.onresult = (event) => {
-            let transcript = event.results[0][0].transcript;
-            resultDiv.innerText = "認識中: " + transcript;
+            let finalTranscript = '';
+            let interimTranscript = '';
             
-            if (event.results[0].isFinal) {
-                resultDiv.innerText = "送信中...";
-                fetch(GAS_URL + "?text=" + encodeURIComponent(transcript))
+            // 途中経過と確定した結果を分ける
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            // 途中経過があればそれを表示し、なければ最終結果を表示
+            resultDiv.innerText = "認識中: " + (interimTranscript || finalTranscript);
+            
+            // 確定した場合の送信処理
+            if (finalTranscript !== '') {
+                resultDiv.innerText = "送信中: " + finalTranscript;
+                fetch(GAS_URL + "?text=" + encodeURIComponent(finalTranscript))
                     .then(res => res.text())
-                    .then(data => resultDiv.innerText = "結果: " + data)
-                    .catch(err => resultDiv.innerText = "通信エラー: " + err);
+                    .then(data => {
+                        resultDiv.innerText = "結果: " + data;
+                    })
+                    .catch(err => {
+                        resultDiv.innerText = "通信エラー: " + err;
+                    });
             }
         };
 
