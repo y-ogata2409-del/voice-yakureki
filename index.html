@@ -116,16 +116,21 @@
 
         // 録音が終了したとき
         recognition.onend = () => {
-            // ここがポイント：isRecognizing が true の時だけ「自動再起動」する
             if (isRecognizing) {
-                try {
-                    recognition.start();
+                // 自動再起動（マイクをONのままの場合）
+                try { 
+                    recognition.start(); 
                 } catch (e) {
-                    // すでに開始している場合などのエラーを握りつぶす
+                    // エラー時は停止状態にする
+                    isRecognizing = false;
+                    micBtn.innerText = "マイクをON";
+                    micBtn.className = "btn start";
                 }
+            } else {
+                // 停止処理（マイクをOFFボタンを押した時）
+                micBtn.innerText = "マイクをON";
+                micBtn.className = "btn start";
             }
-            // else の場合は、ユーザーがボタンを押して isRecognizing = false にした時なので
-            // 何もしない（＝勝手に再起動しない）
         };
 
         recognition.onresult = (event) => {
