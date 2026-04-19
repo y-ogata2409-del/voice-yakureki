@@ -49,18 +49,37 @@
             micBtn.innerText = "マイクをOFF";
             micBtn.className = "btn stop"; // ここで赤色系のCSSスタイル（stop）を適用
         };
-
-        // 「終了」した瞬間にボタンの見た目を更新
+        
+        // 録音が終了したとき
         recognition.onend = () => {
-            isRecognizing = false;
-            micBtn.innerText = "マイクをON";
-            micBtn.className = "btn start"; // ここで緑色系のCSSスタイル（start）を適用
-            resultDiv.innerText = "停止しました";
+            // もし「録音中フラグ」が立っているなら、即座に再起動する
+            if (isRecognizing) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // すでに開始している場合などのエラーを握りつぶす
+                }
+            } else {
+                // ユーザーが停止した場合は、ボタンを戻す
+                micBtn.innerText = "マイクをON";
+                micBtn.className = "btn start";
+                resultDiv.innerText = "停止しました";
+            }
         };
+        let transcriptBuffer = ""; // これまで認識した内容を溜めておく変数
 
         recognition.onresult = (event) => {
-            let transcript = event.results[0][0].transcript;
-            resultDiv.innerText = "認識中: " + transcript;
+            let interimTranscript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    transcriptBuffer += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            // これまで蓄積した内容 + 現在変換中の内容を表示
+            resultDiv.innerText = "認識中: " + transcriptBuffer + interimTranscript;
             
             if (event.results[0].isFinal) {
                 resultDiv.innerText = "送信中...";
